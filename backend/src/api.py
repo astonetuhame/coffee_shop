@@ -28,7 +28,7 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-@app.route('/drinks', methods=['GET'], endpoint='get_drinks')
+@app.route('/drinks', methods=['GET'])
 def drinks():
     """
     Public permission
@@ -56,6 +56,20 @@ def drinks():
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks-detail', methods=['GET'])
+@requires_auth('get:drinks-detail')
+def drinks_detail(f):
+    try:
+        return json.dumps({
+            'success':
+            True,
+            'drinks': [drink.long() for drink in Drink.query.all()]
+        }), 200
+    except:
+        return json.dumps({
+            'success': False,
+            'error': "An error occurred"
+        }), 500
 
 
 '''
