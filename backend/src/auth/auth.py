@@ -171,8 +171,11 @@ def requires_auth(permission=''):
         @wraps(f)
         def wrapper(*args, **kwargs):
             token = get_token_auth_header()
-            payload = verify_decode_jwt(token)
-            check_permissions(permission, payload)
+            try:
+                payload = verify_decode_jwt(token)
+                check_permissions(permission, payload)
+            except:
+                abort(401)
             return f(payload, *args, **kwargs)
 
         return wrapper
