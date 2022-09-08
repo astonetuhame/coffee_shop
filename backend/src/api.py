@@ -29,7 +29,7 @@ db_drop_and_create_all()
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks', methods=['GET'])
-def drinks():
+def get_drinks():
     """
     Public permission
     This API fetches all drinks with a short description
@@ -81,7 +81,27 @@ def drinks_detail(f):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks', methods=['POST'])
+@requires_auth('post:drinks')
+def post_drinks(f):
+    """
+     post:drinks permission
+     This API creates a new drink and returns its long description
+     Return the created drink info or the error handler
+     """
 
+    data = dict(request.form or request.json or request.data)
+    drink = Drink(title=data.get('title'),
+                  recipe=data.get('recipe') if type(data.get('recipe')) == str
+                  else json.dumps(data.get('recipe')))
+    try:
+        drink.insert()
+        return json.dumps({'success': True, 'drink': drink.long()}), 200
+    except:
+        return json.dumps({
+            'success': False,
+            'error': "An error occurred"
+        }), 500
 
 '''
 @TODO implement endpoint
@@ -94,6 +114,38 @@ def drinks_detail(f):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<id>', methods=['PATCH'])
+@requires_auth('patch:drinks')
+def update_drinks(f, id):
+    """
+     patch:drinks permission
+     This API updates a drink if it exists
+     Return the updated drink info or the error handler
+     OBS: I would rather return a single object instead of an array, but POSTman test once again enforces it
+     """
+    try:
+        data = dict(request.form or request.json or request.data)
+        drink = Drink.query.filter(Drink.id == id).one_or_none()
+        if drink:
+            drink.title = data.get('title') if data.get(
+                'title') else drink.title
+            recipe = data.get('recipe') if data.get('recipe') else drink.recipe
+            drink.recipe = recipe if type(recipe) == str else json.dumps(
+                recipe)
+            drink.update()
+            return json.dumps({'success': True, 'drinks': [drink.long()]}), 200
+        else:
+            return json.dumps({
+                'success':
+                False,
+                'error':
+                'Drink #' + id + ' not found to be edited'
+            }), 404
+    except:
+        return json.dumps({
+            'success': False,
+            'error': "An error occurred"
+        }), 500
 
 
 '''
@@ -106,6 +158,31 @@ def drinks_detail(f):
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
+def drinks(f, id):
+    """
+     delete:drinks permission
+     This API deletes a drink if it exists
+     Return the deleted drink info or the error handler
+     """
+    try:
+        drink = drink = Drink.query.filter(Drink.id == id).one_or_none()
+        if drink:
+            drink.delete()
+            return json.dumps({'success': True, 'drink': id}), 200
+        else:
+            return json.dumps({
+                'success':
+                False,
+                'error':
+                'Drink #' + id + ' not found to be deleted'
+            }), 404
+    except:
+        return json.dumps({
+            'success': False,
+            'error': "An error occurred"
+        }), 500
 
 
 # Error Handling
