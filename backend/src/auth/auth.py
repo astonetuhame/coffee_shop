@@ -34,26 +34,26 @@ def get_token_auth_header():
     auth = request.headers.get('Authorization', None)
     if not auth:
         raise AuthError({
-            'code': 'authorization_header_missing',
+            'code': 'Authorization Header Missing',
             'description': 'Authorization header is expected.'
         }, 401)
 
     parts = auth.split()
     if parts[0].lower() != 'bearer':
         raise AuthError({
-            'code': 'invalid_header',
+            'code': 'Invalid Header',
             'description': 'Authorization header must start with "Bearer".'
         }, 401)
 
     elif len(parts) == 1:
         raise AuthError({
-            'code': 'invalid_header',
+            'code': 'Invalid Header',
             'description': 'Token not found.'
         }, 401)
 
     elif len(parts) > 2:
         raise AuthError({
-            'code': 'invalid_header',
+            'code': 'Invalid Header',
             'description': 'Authorization header must be bearer token.'
         }, 401)
 
@@ -75,19 +75,11 @@ def check_permissions(permission, payload):
     if payload.get('permissions'):
         token_scopes = payload.get("permissions")
         if (permission not in token_scopes):
-            raise AuthError(
-                {
-                    'code': 'invalid_permissions',
-                    'description': 'User does not have enough privileges'
-                }, 401)
+            abort(403, "User lacks the required permissions")
         else:
             return True
     else:
-        raise AuthError(
-            {
-                'code': 'invalid_permissions',
-                'description': 'User does not have any roles attached'
-            }, 401)
+        abort(403, "Not permitted")
 
 
 '''
@@ -145,16 +137,16 @@ def verify_decode_jwt(token):
             raise AuthError({
                 'code': 'invalid_claims',
                 'description': 'Incorrect claims. Please, check the audience and issuer.'
-            }, 401)
+            }, 403)
         except Exception:
             raise AuthError({
                 'code': 'invalid_header',
                 'description': 'Unable to parse authentication token.'
-            }, 400)
+            }, 401)
     raise AuthError({
                 'code': 'invalid_header',
                 'description': 'Unable to find the appropriate key.'
-            }, 400)
+            }, 401)
 
 '''
 @TODO implement @requires_auth(permission) decorator method
@@ -171,11 +163,11 @@ def requires_auth(permission=''):
         @wraps(f)
         def wrapper(*args, **kwargs):
             token = get_token_auth_header()
-            try:
-                payload = verify_decode_jwt(token)
-                check_permissions(permission, payload)
-            except:
-                abort(401)
+            # try:
+            payload = verify_decode_jwt(token)
+            check_permissions(permission, payload)
+            # except:
+                # abort(403, "Forbidden")
             return f(payload, *args, **kwargs)
 
         return wrapper
