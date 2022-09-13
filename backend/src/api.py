@@ -67,21 +67,21 @@ def post_new_drink(payload):
     # abort 404 if title or recipe is not in the body
     new_title = request.json.get("title")
     new_recipe = request.json.get("recipe")
+    check_title = Drink.query.filter_by(title=new_title).first()
     if not (new_title and new_recipe):
         abort(400)
-    
-    check_title = Drink.query.filter_by(title=new_title).first()
-
+    # check if title for the drink already exists
     if not check_title:
         try:
             drink = Drink(title=data.get('title'),
-                        recipe=json.dumps(data.get('recipe')))
+                          recipe=json.dumps(data.get('recipe')))
             drink.insert()
             return jsonify({'success': True, 'drink': drink.long()}), 200
         except HTTPException:
             abort(422)
     else:
-        return jsonify({'success': False, 'message': 'Drink title already exists'}), 400
+        return jsonify({'success': False,
+                       'message': 'Drink title already exists'}), 400
 
 
 # Update an existing drink
